@@ -1,0 +1,17 @@
+#cloud {
+	float:left;
+	height: 80vh;
+}
+
+#list {
+	float:left;
+	height: 80vh;
+	overflow: scroll;
+	white-space: nowrap;
+	max-width: 20vw;
+}
+
+.row-item {
+	padding-bottom: 5px;
+	padding-top: 5px;
+}
