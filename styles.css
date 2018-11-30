@@ -1,3 +1,6 @@
+body {
+    background-color: #FAFAFA;
+}
 #everything {
 	display:flex;
 	justify-content: space-evenly;
