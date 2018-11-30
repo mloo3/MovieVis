@@ -60,7 +60,7 @@ function start() {
             }))
             .padding(5)
             .rotate(function() { return ~~(Math.random() * 2) * 90; })
-            .font("Impact")
+            .font("helvetica")
             .fontSize(function(d) {
                 for (var i = 0; i < bins.length; i++) {
                     if (bins[i].includes(d.size)) {
@@ -85,7 +85,7 @@ function draw(words) {
         .data(words)
       .enter().append("text")
         .style("font-size", function(d) { return d.size + "px"; })
-        .style("font-family", "Impact")
+        .style("font-family", "helvetica")
         .style("fill", function(d, i) { return fill(i); })
         .attr("text-anchor", "middle")
         .attr("transform", function(d) {
@@ -139,11 +139,11 @@ function getActorNames(data, genre) {
 //     card.append("div")
 //         .text("Actor Name")
 //     card.append("div")
-//         .text("Actor Likes")        
+//         .text("Actor Likes")
 // }
 
 function drawMovieCard() {
-    
+
 }
 
 function drawDropdown() {
@@ -169,7 +169,7 @@ function drawForceGraph(type, lselected, genre, data) {
     if (type === "person") {
         filtered = data.filter(function(d){
             let genres = d['genres'].split('|');
-            if (genres.includes(genre) && 
+            if (genres.includes(genre) &&
                 (lselected===d.actor_1_name || lselected===d.actor_2_name || lselected === d.actor_3_name)) {
                 return true;
             }
@@ -209,17 +209,17 @@ function drawForceGraph(type, lselected, genre, data) {
     clearForceGraph();
 
     console.log(links);
-    linkvar = forceSvg.selectAll(".link").data(links, function(d, i) { 
-        return d.source.id + d.target.id; 
+    linkvar = forceSvg.selectAll(".link").data(links, function(d, i) {
+        return d.source.id + d.target.id;
     });
-    
+
 
     link = linkvar
         .enter().append("line")
         .attr("class", "link");
 
-    nodevar = forceSvg.selectAll(".node").data(nodes, function(d,i) { 
-        return d.id; 
+    nodevar = forceSvg.selectAll(".node").data(nodes, function(d,i) {
+        return d.id;
     });
     node = nodevar
         .enter()
@@ -292,8 +292,8 @@ function drawList(genre, type) {
     }
     console.log(allTitlesNames);
     var list = d3.select("#list").selectAll("div")
-        .data(allTitlesNames, function(d, i) { 
-            return d; 
+        .data(allTitlesNames, function(d, i) {
+            return d;
         });
 
     list.exit().remove();
@@ -301,11 +301,11 @@ function drawList(genre, type) {
     list.enter()
         .append("div")
         .text(function(d) { return d; })
-        .on("click", function(d,i) { 
+        .on("click", function(d,i) {
             d3.select("#list").selectAll("div").classed("list-item-clicked", function(l,i){
                 return l === d;
             });
-            selected = d; 
+            selected = d;
             console.log(selected);
             drawForceGraph(curview, selected, selectedGenre, allData);
 
@@ -321,13 +321,13 @@ function drawList(genre, type) {
 }
 
 function clearForceGraph() {
-    curnodes = forceSvg.selectAll(".node").data([], function(d,i) { 
-        return d.id; 
+    curnodes = forceSvg.selectAll(".node").data([], function(d,i) {
+        return d.id;
     });
     curnodes.exit().remove();
 
-    curlinks = forceSvg.selectAll(".link").data([], function(d, i) { 
-        return d.source.id + d.target.id; 
+    curlinks = forceSvg.selectAll(".link").data([], function(d, i) {
+        return d.source.id + d.target.id;
     });
     curlinks.exit().remove();
 }
