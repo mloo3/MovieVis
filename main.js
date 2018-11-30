@@ -73,6 +73,7 @@ function start() {
     
 }
 
+
 function draw(words) {
     d3.select("#cloud").append("svg")
         .attr("width", cloudWidth)
@@ -107,4 +108,16 @@ function getMovieNames(data, genre) {
     console.log(names);
     return names;
 
+}
+
+function drawActorCard() {
+    card = d3.select("#card");
+    card.append("div")
+        .text("Actor Name")
+    card.append("div")
+        .text("Actor Likes")        
+}
+
+function drawMovieCard() {
+    
 }
