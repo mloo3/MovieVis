@@ -3,9 +3,13 @@ var fill = d3.scale.category20();
 var cloudWidth = 500;
 var cloudHeight = 500;
 var selectedGenre;
+var selectedGenreIdx;
+var curview = "movie"; // if force graph is viewing a person or movie
 window.onload = start;
-var selectedMovie;
+var selected; // movie or person
 var allData;
+var forceSvg;
+var dropdown;
 
 function start() {
     d3.csv('movies.csv', function(d) {
@@ -35,6 +39,12 @@ function start() {
             });
         });
         allData = d;
+
+        drawDropdown();
+
+        forceSvg = d3.select("#force").append("svg")
+            .attr("width", 500)
+            .attr("height", 500);
 
         // default selected genre
         selectedGenre = Object.keys(genreFrequency)[0];
@@ -83,41 +93,203 @@ function draw(words) {
         })
         .text(function(d) { return d.text; })
               .on('click', function(d,i) {
-                drawMovieNames(d);
+                selectedGenre = d.text;
+                selectedGenreIdx = i;
+                drawList(d.text, curview);
                 d3.select('#cloud').selectAll("text").classed('clicked', function(a) {
                     return a.text === d.text;
                 });
+                clearForceGraph();
               });
 }
 
 function getMovieNames(data, genre) {
+    console.log(data);
+    console.log(genre);
     var names = data.filter(function(d) {
         var genres = d['genres'].split('|');
-        if (genres.includes(genre.text)) {
+        if (genres.includes(genre)) {
             return d.movie_title.trim();
         }
     });
     return names;
 }
 
-function drawActorCard() {
-    card = d3.select("#card");
-    card.append("div")
-        .text("Actor Name")
-    card.append("div")
-        .text("Actor Likes")        
+function getActorNames(data, genre) {
+    var rows = data.filter(function(d) {
+        var genres = d['genres'].split('|');
+        if (genres.includes(genre)){
+            return true;
+        }
+    });
+    var res = []
+    rows.forEach(function(r) {
+        for (var i = 1; i < 4; i++) {
+            curname = r['actor_' + i + '_name'].trim();
+            if(curname && res.indexOf(curname) == -1) {
+                res.push(curname);
+            }
+        }
+    });
+    return res;
 }
+
+// function drawActorCard() {
+//     card = d3.select("#card");
+//     card.append("div")
+//         .text("Actor Name")
+//     card.append("div")
+//         .text("Actor Likes")        
+// }
 
 function drawMovieCard() {
     
 }
 
-function drawMovieNames(data) {
-    // compile all movie names
-    var allTitles = getMovieNames(allData, data);
-    var allTitlesNames = allTitles.map(function(d) {
-        return d.movie_title.trim();
+function drawDropdown() {
+    console.log("drawing dropdown");
+    dropdown = d3.select("#cats")
+        .append('select');
+    dropdown.append('option').attr('value', 'movie').text('Movie Titles');
+    dropdown.append('option').attr('value', 'person').text('People');
+    dropdown.on('change', function() {
+        clearForceGraph();
+        curview = this.value;
+        selected = '';
+        drawList(selectedGenre, curview);
+    })
+}
+
+function drawForceGraph(type, lselected, genre, data) {
+    // filter data
+    var filtered;
+    var nodes = [];
+    var links = [];
+
+    if (type === "person") {
+        filtered = data.filter(function(d){
+            let genres = d['genres'].split('|');
+            if (genres.includes(genre) && 
+                (lselected===d.actor_1_name || lselected===d.actor_2_name || lselected === d.actor_3_name)) {
+                return true;
+            }
+        });
+        nodes.push({"id":lselected, "type": "center"});
+        for (var i = 0; i < filtered.length; i++){
+            nodes.push({"id": filtered[i].movie_title.trim(), "type": "leaf", "x": i+10, "y": i+10});
+            links.push({"source": 0, "target": i+1})
+        }
+
+    } else { // type is movie
+        filtered = data.filter(function(d){
+            let genres = d['genres'].split('|');
+            if (genres.includes(genre) && d.movie_title.trim() === lselected) {
+                return true;
+            }
+        });
+        curMovie = filtered[0];
+        nodes.push({"id": lselected, "type": "center"});
+        for(var i = 1; i < 4; i++){
+            if (curMovie['actor_' + i + '_name']) {
+                nodes.push({"id": curMovie['actor_' + i + '_name'], "type": "leaf", "x": i + 20, "y": i + 30});
+                links.push({"source": 0, "target": nodes.length - 1});
+            }
+        }
+    }
+
+    force = d3.layout.force()
+        .size([500, 500])
+        .linkDistance(200)
+        .charge(-400)
+        .nodes(nodes)
+        .links(links)
+        .start();
+
+    var drag = force.drag();
+    clearForceGraph();
+
+    console.log(links);
+    linkvar = forceSvg.selectAll(".link").data(links, function(d, i) { 
+        return d.source.id + d.target.id; 
     });
+    
+
+    link = linkvar
+        .enter().append("line")
+        .attr("class", "link");
+
+    nodevar = forceSvg.selectAll(".node").data(nodes, function(d,i) { 
+        return d.id; 
+    });
+    node = nodevar
+        .enter()
+        .append("g")
+        .attr("class", "node")
+        .on("click", function(d) {
+            if (d3.event.defaultPrevented) return; // dragged
+            if (curview === "person" && (d.id !== selected)) {
+                selected = d.id;
+                console.log(selected);
+                curview = "movie";
+                drawForceGraph(curview, d.id, selectedGenre, allData);
+                drawList(selectedGenre, curview);
+            } else if (curview === "movie" && d.id !== selected) {
+                selected = d.id;
+                console.log(selected);
+                curview = "person";
+                drawForceGraph(curview, d.id, selectedGenre, allData);
+                drawList(selectedGenre, curview);
+            }
+        })
+        .call(drag);
+
+    node.append("circle")
+        .attr("r", 20)
+        .attr("fill", function(d) {
+            return fill(selectedGenreIdx);
+        })
+        .attr("stroke", function(d) {
+            if (d.type === "center") { return "black"; }
+        })
+        .attr("opacity", function(d) {
+            if (d.type === "leaf") { return 0.5; }
+        })
+
+    node.append("text")
+        .text(function(d) { return d.id; });
+
+    force.on("tick", tick);
+    function tick() {
+        link.attr("x1", function(d) { return d.source.x; })
+            .attr("y1", function(d) { return d.source.y; })
+            .attr("x2", function(d) { return d.target.x; })
+            .attr("y2", function(d) { return d.target.y; });
+        node.attr("transform", function(d) {
+            return "translate(" + d.x + "," + d.y + ")";
+        });
+    }
+}
+
+
+function drawList(genre, type) {
+    console.log("drawList");
+    console.log(selected, type);
+    // compile all movie names
+    var allTitles;
+    var allTitlesNames;
+    if (type === "movie") {
+        curview = "movie";
+        console.log("in here");
+        allTitles = getMovieNames(allData, genre);
+        console.log(allTitles);
+        allTitlesNames = allTitles.map(function(d) {
+            return d.movie_title.trim();
+        });
+    } else {
+        console.log("Getting actor names");
+        curview = "person";
+        allTitlesNames = getActorNames(allData, genre);
+    }
     console.log(allTitlesNames);
     var list = d3.select("#list").selectAll("div")
         .data(allTitlesNames, function(d, i) { 
@@ -129,5 +301,33 @@ function drawMovieNames(data) {
     list.enter()
         .append("div")
         .text(function(d) { return d; })
-        .on("click", function(d,i) { selectedMovie = d; });
+        .on("click", function(d,i) { 
+            d3.select("#list").selectAll("div").classed("list-item-clicked", function(l,i){
+                return l === d;
+            });
+            selected = d; 
+            console.log(selected);
+            drawForceGraph(curview, selected, selectedGenre, allData);
+
+        });
+    d3.select("#list").selectAll("div").classed("list-item-clicked", function(d) {
+        return selected === d;
+    });
+    if (selected) {
+        var element = document.getElementsByClassName("list-item-clicked")[0];
+        console.log(element);
+        element.scrollIntoView();
+    }
+}
+
+function clearForceGraph() {
+    curnodes = forceSvg.selectAll(".node").data([], function(d,i) { 
+        return d.id; 
+    });
+    curnodes.exit().remove();
+
+    curlinks = forceSvg.selectAll(".link").data([], function(d, i) { 
+        return d.source.id + d.target.id; 
+    });
+    curlinks.exit().remove();
 }

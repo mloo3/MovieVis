@@ -3,12 +3,19 @@
 	height: 80vh;
 }
 
-#list {
+#wrapper {
 	float:left;
+}
+
+#list {
 	height: 80vh;
 	overflow: scroll;
 	white-space: nowrap;
 	max-width: 20vw;
+}
+
+#force {
+	float:left;
 }
 
 .row-item {
@@ -18,4 +25,18 @@
 
 .clicked {
     fill: black !important;
+}
+
+.link{
+	stroke: #000;
+	stroke-width: 1.5px;
+	stroke-opacity: 0.6;
+}
+
+.node circle{
+	cursor: move;
+}
+
+.list-item-clicked {
+	background: rgba(0, 255, 0, 0.4);
 }
