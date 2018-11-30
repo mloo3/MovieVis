@@ -47,7 +47,7 @@ function start() {
             .attr("height", 500);
 
         // default selected genre
-        selectedGenre = Object.keys(genreFrequency)[0];
+        // selectedGenre = Object.keys(genreFrequency)[0];
         var genreCounts = Object.values(genreFrequency);
         var bins = d3.layout.histogram()
             .bins(8)
@@ -166,10 +166,12 @@ function drawForceGraph(type, lselected, genre, data) {
             for (var i = 1; i < 4; i++) {
                 if (d['actor_' + i + '_name'] === lselected) {
                     payload['personfb'] = d['actor_' + i + '_facebook_likes'];
+                    payload['isDirector'] = false;
                 }
             }
             if (lselected === d['director_name']) {
                 payload['personfb'] = d['director_facebook_likes'];
+                payload['isDirector'] = true;
             }
         });
 
@@ -312,6 +314,11 @@ function updateTable(type, payload) {
         document.getElementById("movietable").style.display='none';
         document.getElementById("persontable").style.display='block';
         d3.select("#personfb").text(payload.personfb);
+        if (payload.isDirector) {
+            d3.select("#role").text("Director");
+        } else {
+            d3.select("#role").text("Actor/Actress");
+        }
     } else {
         document.getElementById("movietable").style.display='block';
         document.getElementById("persontable").style.display='none';
@@ -327,6 +334,9 @@ function updateTable(type, payload) {
 
 
 function drawList(genre, type) {
+    if (!genre) {
+        return;
+    }
     console.log("drawList");
     console.log(selected, type);
     // compile all movie names

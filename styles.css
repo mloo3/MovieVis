@@ -1,10 +1,14 @@
+#everything {
+	display:flex;
+	justify-content: space-evenly;
+}
 #cloud {
-	float:left;
+	/*float:left;*/
 	height: 80vh;
 }
 
 #wrapper {
-	float:left;
+	/*float:left;*/
 }
 
 #list {
@@ -15,7 +19,7 @@
 }
 
 #wrapper2 {
-	float:left;
+	/*float:left;*/
 	padding-left: 20px;
 }
 
