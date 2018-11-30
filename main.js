@@ -5,6 +5,7 @@ var cloudHeight = 500;
 var selectedGenre;
 window.onload = start;
 var selectedMovie;
+var allData;
 
 function start() {
     d3.csv('movies.csv', function(d) {
@@ -33,17 +34,7 @@ function start() {
                genreFrequency[g] = (genreFrequency[g] || 0) + 1;
             });
         });
-
-        // compile all movie names
-        var allTitles = getMovieNames(d);
-        d3.select("#list").selectAll("div")
-            .data(allTitles)
-            .enter()
-            .append("div")
-            .text(function(d) { return d; })
-            .on("click", function(d,i) {
-                selectedMovie = d;
-            });
+        allData = d;
 
         // default selected genre
         selectedGenre = Object.keys(genreFrequency)[0];
@@ -70,7 +61,7 @@ function start() {
             .on("end", draw)
             .start();
         });
-    
+
 }
 
 
@@ -100,14 +91,13 @@ function draw(words) {
 }
 
 function getMovieNames(data, genre) {
-    console.log("hello");
-    // var names = d3.nest()
-    //     .key(function(d) { return d.movie_title; })
-    //     .entries(data);
-    var names = data.map(function(d) { return d.movie_title.trim()});
-    console.log(names);
+    var names = data.filter(function(d) {
+        var genres = d['genres'].split('|');
+        if (genres.includes(genre.text)) {
+            return d.movie_title.trim();
+        }
+    });
     return names;
-
 }
 
 function drawActorCard() {
@@ -120,4 +110,24 @@ function drawActorCard() {
 
 function drawMovieCard() {
     
+}
+
+function drawMovieNames(data) {
+    // compile all movie names
+    var allTitles = getMovieNames(allData, data);
+    var allTitlesNames = allTitles.map(function(d) {
+        return d.movie_title.trim();
+    });
+    console.log(allTitlesNames);
+    var list = d3.select("#list").selectAll("div")
+        .data(allTitlesNames, function(d, i) { 
+            return d; 
+        });
+
+    list.exit().remove();
+
+    list.enter()
+        .append("div")
+        .text(function(d) { return d; })
+        .on("click", function(d,i) { selectedMovie = d; });
 }
