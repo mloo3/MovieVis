@@ -39,7 +39,7 @@ function start() {
             });
         });
         allData = d;
-
+        hideTable();
         drawDropdown();
 
         forceSvg = d3.select("#force").append("svg")
@@ -95,6 +95,7 @@ function draw(words) {
               .on('click', function(d,i) {
                 selectedGenre = d.text;
                 selectedGenreIdx = i;
+                selected='';
                 drawList(d.text, curview);
                 d3.select('#cloud').selectAll("text").classed('clicked', function(a) {
                     return a.text === d.text;
@@ -130,28 +131,21 @@ function getActorNames(data, genre) {
                 res.push(curname);
             }
         }
+        let director = r['director_name'].trim();
+        if (res.indexOf(director) == -1) {
+            res.push(director);
+        }
     });
     return res;
 }
 
-// function drawActorCard() {
-//     card = d3.select("#card");
-//     card.append("div")
-//         .text("Actor Name")
-//     card.append("div")
-//         .text("Actor Likes")        
-// }
-
-function drawMovieCard() {
-    
-}
 
 function drawDropdown() {
     console.log("drawing dropdown");
     dropdown = d3.select("#cats")
         .append('select');
     dropdown.append('option').attr('value', 'movie').text('Movie Titles');
-    dropdown.append('option').attr('value', 'person').text('People');
+    dropdown.append('option').attr('value', 'person').text('Actors/Directors');
     dropdown.on('change', function() {
         clearForceGraph();
         curview = this.value;
@@ -165,12 +159,26 @@ function drawForceGraph(type, lselected, genre, data) {
     var filtered;
     var nodes = [];
     var links = [];
+    var payload = {};
 
     if (type === "person") {
+        data.forEach(function(d) {
+            for (var i = 1; i < 4; i++) {
+                if (d['actor_' + i + '_name'] === lselected) {
+                    payload['personfb'] = d['actor_' + i + '_facebook_likes'];
+                }
+            }
+            if (lselected === d['director_name']) {
+                payload['personfb'] = d['director_facebook_likes'];
+            }
+        });
+
+        console.log(payload);
+
         filtered = data.filter(function(d){
             let genres = d['genres'].split('|');
             if (genres.includes(genre) && 
-                (lselected===d.actor_1_name || lselected===d.actor_2_name || lselected === d.actor_3_name)) {
+                (lselected===d.actor_1_name || lselected===d.actor_2_name || lselected === d.actor_3_name || lselected === d.director_name)) {
                 return true;
             }
         });
@@ -181,6 +189,20 @@ function drawForceGraph(type, lselected, genre, data) {
         }
 
     } else { // type is movie
+        console.log(lselected);
+        data.forEach(function(d) {
+            if (d.movie_title.trim() === lselected) {
+                payload['gross'] = d.gross;
+                payload['budget'] = d.budget;
+                payload['score'] = d.imdb_score;
+                payload['year'] = d.title_year;
+                payload['language'] = d.language;
+                payload['rating'] = d.content_rating;
+                payload['country'] = d.country;
+            }
+        });
+
+
         filtered = data.filter(function(d){
             let genres = d['genres'].split('|');
             if (genres.includes(genre) && d.movie_title.trim() === lselected) {
@@ -195,6 +217,10 @@ function drawForceGraph(type, lselected, genre, data) {
                 links.push({"source": 0, "target": nodes.length - 1});
             }
         }
+        if(curMovie['director_name']) {
+            nodes.push({"id": curMovie['director_name'], "type": "leaf", "x": 30, "y":40});
+            links.push({"source": 0, "target": nodes.length - 1});
+        }
     }
 
     force = d3.layout.force()
@@ -207,6 +233,8 @@ function drawForceGraph(type, lselected, genre, data) {
 
     var drag = force.drag();
     clearForceGraph();
+
+    updateTable(type, payload);
 
     console.log(links);
     linkvar = forceSvg.selectAll(".link").data(links, function(d, i) { 
@@ -231,12 +259,14 @@ function drawForceGraph(type, lselected, genre, data) {
                 selected = d.id;
                 console.log(selected);
                 curview = "movie";
+                dropdown.property('value', curview);
                 drawForceGraph(curview, d.id, selectedGenre, allData);
                 drawList(selectedGenre, curview);
             } else if (curview === "movie" && d.id !== selected) {
                 selected = d.id;
                 console.log(selected);
                 curview = "person";
+                dropdown.property('value', curview);
                 drawForceGraph(curview, d.id, selectedGenre, allData);
                 drawList(selectedGenre, curview);
             }
@@ -267,6 +297,31 @@ function drawForceGraph(type, lselected, genre, data) {
         node.attr("transform", function(d) {
             return "translate(" + d.x + "," + d.y + ")";
         });
+    }
+}
+function hideTable() {
+    document.getElementById("persontable").style.display='none';
+    document.getElementById("movietable").style.display='none';
+
+}
+
+function updateTable(type, payload) {
+    console.log("updateTable");
+    console.log(type, payload);
+    if (type === "person") {
+        document.getElementById("movietable").style.display='none';
+        document.getElementById("persontable").style.display='block';
+        d3.select("#personfb").text(payload.personfb);
+    } else {
+        document.getElementById("movietable").style.display='block';
+        document.getElementById("persontable").style.display='none';
+        d3.select("#gross").text(payload.gross);
+        d3.select("#budget").text(payload.budget);
+        d3.select("#score").text(payload.score);
+        d3.select("#year").text(payload.year);
+        d3.select("#rating").text(payload.rating);
+        d3.select("#language").text(payload.language);
+        d3.select("#country").text(payload.country);
     }
 }
 
@@ -321,6 +376,7 @@ function drawList(genre, type) {
 }
 
 function clearForceGraph() {
+    hideTable();
     curnodes = forceSvg.selectAll(".node").data([], function(d,i) { 
         return d.id; 
     });

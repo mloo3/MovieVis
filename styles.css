@@ -14,8 +14,13 @@
 	max-width: 20vw;
 }
 
-#force {
+#wrapper2 {
 	float:left;
+	padding-left: 20px;
+}
+
+#force {
+	/*float:left;*/
 }
 
 .row-item {
